@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: salary-management
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/salary}
+    username: ${DATABASE_USER:salary}
+    password: ${DATABASE_PASSWORD:salary}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that the mapping matches it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+
+server:
+  port: ${PORT:8080}
+
+app:
+  seed:
+    # Off unless asked for: seeding writes 10,000 people, and with reset it deletes what is there.
+    enabled: ${SEED_ENABLED:false}
+    reset: ${SEED_RESET:false}
+    employee-count: ${SEED_EMPLOYEE_COUNT:10000}
+    random-seed: ${SEED_RANDOM_SEED:20250601}
