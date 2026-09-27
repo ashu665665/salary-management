@@ -77,6 +77,29 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+            <!--
+                Two kinds of test, run separately.
+
+                `mvn test` runs the unit tests only: no database, no Docker, a couple of seconds.
+                That is the loop you work in.
+
+                `mvn verify` adds the *IT classes, which start a real Postgres through
+                Testcontainers and run the migrations against it. Slower, and worth it: the SQL and
+                the entity mappings are only genuinely exercised against the real database.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>

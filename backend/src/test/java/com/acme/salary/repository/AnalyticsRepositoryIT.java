@@ -34,7 +34,7 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
-class AnalyticsRepositoryTest extends PostgresTestBase {
+class AnalyticsRepositoryIT extends PostgresTestBase {
 
     private static final LocalDate AS_OF = LocalDate.of(2025, 6, 1);
     private static final LocalDate HIRED = LocalDate.of(2020, 1, 1);

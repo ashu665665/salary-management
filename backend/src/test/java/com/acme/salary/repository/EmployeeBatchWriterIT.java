@@ -23,7 +23,7 @@ import org.springframework.test.context.TestPropertySource;
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @TestPropertySource(properties = "spring.jpa.hibernate.ddl-auto=validate")
-class EmployeeBatchWriterTest extends PostgresTestBase {
+class EmployeeBatchWriterIT extends PostgresTestBase {
 
     @Autowired
     private JdbcTemplate jdbc;
