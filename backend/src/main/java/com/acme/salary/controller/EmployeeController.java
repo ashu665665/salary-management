@@ -1,5 +1,6 @@
 package com.acme.salary.controller;
 
+import com.acme.salary.dto.EmployeeCriteria;
 import com.acme.salary.dto.EmployeeDetail;
 import com.acme.salary.dto.EmployeeSummary;
 import com.acme.salary.dto.ExitRequest;
@@ -14,6 +15,7 @@ import com.acme.salary.model.JobLevel;
 import com.acme.salary.service.EmployeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
@@ -42,37 +44,49 @@ public class EmployeeController {
             @RequestParam(required = false) JobLevel jobLevel,
             @RequestParam(defaultValue = "false") boolean includeLeavers,
             @PageableDefault(size = 25, sort = "lastName") Pageable pageable) {
-        throw new UnsupportedOperationException("not implemented yet");
+
+        EmployeeCriteria criteria = new EmployeeCriteria(search, country, department, jobLevel, includeLeavers);
+
+        return toPageResponse(service.search(criteria, pageable));
     }
 
     @GetMapping("/{id}")
     public EmployeeDetail get(@PathVariable Long id) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.findDetail(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public EmployeeDetail hire(@Valid @RequestBody HireEmployeeRequest request) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.hire(request);
     }
 
     @PatchMapping("/{id}")
     public EmployeeDetail update(@PathVariable Long id, @Valid @RequestBody UpdateEmployeeRequest request) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.updateDetails(id, request);
     }
 
     @PostMapping("/{id}/revisions")
     public EmployeeDetail recordRevision(@PathVariable Long id, @Valid @RequestBody RecordRevisionRequest request) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.recordRevision(id, request);
     }
 
     @PostMapping("/{id}/promotion")
     public EmployeeDetail promote(@PathVariable Long id, @Valid @RequestBody PromoteRequest request) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.promote(id, request);
     }
 
     @PostMapping("/{id}/exit")
     public EmployeeDetail markExit(@PathVariable Long id, @Valid @RequestBody ExitRequest request) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.markExit(id, request);
+    }
+
+    private static <T> PageResponse<T> toPageResponse(Page<T> page) {
+        return new PageResponse<>(
+                page.getContent(),
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages());
     }
 }
