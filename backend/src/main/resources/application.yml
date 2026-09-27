@@ -22,8 +22,9 @@ server:
 
 app:
   seed:
-    # Off unless asked for: seeding writes 10,000 people, and with reset it deletes what is there.
-    enabled: ${SEED_ENABLED:false}
+    # Fills an empty database with a small demo organisation. Never touches existing data unless
+    # reset is asked for. Set employee-count higher for a full-sized organisation.
+    enabled: ${SEED_ENABLED:true}
     reset: ${SEED_RESET:false}
-    employee-count: ${SEED_EMPLOYEE_COUNT:10000}
+    employee-count: ${SEED_EMPLOYEE_COUNT:25}
     random-seed: ${SEED_RANDOM_SEED:20250601}
