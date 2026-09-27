@@ -86,9 +86,21 @@ public class EmployeeService {
                 .collect(Collectors.toMap(CurrentSalaryRow::getEmployeeId, Function.identity()));
     }
 
-    /** Every employee matching the filter, as a CSV file. Not paged: an export is the whole list. */
+    /**
+     * Every employee matching the filter, as a CSV file. Not paged, because an export of one page
+     * is not an export.
+     *
+     * <p>The whole result is built in memory. At the sizes this system is for that is measured in
+     * megabytes; if exports ever had to cover far more than 10,000 people, this is the method that
+     * would stream instead.
+     */
     public CsvExport exportCsv(EmployeeCriteria criteria) {
-        throw new UnsupportedOperationException("not implemented yet");
+        LocalDate asOf = today();
+        List<Employee> matching = employees.findAll(
+                EmployeeSpecifications.matching(criteria.asOf(asOf)), EXPORT_ORDER);
+
+        List<EmployeeSummary> rows = withCurrentSalaries(matching, asOf);
+        return new CsvExport("employees-" + asOf + ".csv", csvWriter.write(rows));
     }
 
     public EmployeeDetail findDetail(Long id) {

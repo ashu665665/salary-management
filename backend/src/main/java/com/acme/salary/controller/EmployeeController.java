@@ -63,7 +63,14 @@ public class EmployeeController {
             @RequestParam(required = false) Department department,
             @RequestParam(required = false) JobLevel jobLevel,
             @RequestParam(defaultValue = "false") boolean includeLeavers) {
-        throw new UnsupportedOperationException("not implemented yet");
+
+        CsvExport export = service.exportCsv(
+                new EmployeeCriteria(search, country, department, jobLevel, includeLeavers));
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + export.filename() + "\"")
+                .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
+                .body(export.content());
     }
 
     @GetMapping("/{id}")
