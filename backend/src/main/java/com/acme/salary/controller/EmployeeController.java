@@ -1,6 +1,7 @@
 package com.acme.salary.controller;
 
 import com.acme.salary.dto.EmployeeCriteria;
+import com.acme.salary.dto.CsvExport;
 import com.acme.salary.dto.EmployeeDetail;
 import com.acme.salary.dto.EmployeeSummary;
 import com.acme.salary.dto.ExitRequest;
@@ -18,7 +19,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import java.nio.charset.StandardCharsets;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,6 +53,17 @@ public class EmployeeController {
         EmployeeCriteria criteria = new EmployeeCriteria(search, country, department, jobLevel, includeLeavers);
 
         return toPageResponse(service.search(criteria, pageable));
+    }
+
+    /** The current list as a CSV download, filtered exactly as the screen is. */
+    @GetMapping(value = "/export", produces = "text/csv")
+    public ResponseEntity<String> export(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Country country,
+            @RequestParam(required = false) Department department,
+            @RequestParam(required = false) JobLevel jobLevel,
+            @RequestParam(defaultValue = "false") boolean includeLeavers) {
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     @GetMapping("/{id}")

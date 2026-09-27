@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.acme.salary.dto.EmployeeCriteria;
+import com.acme.salary.dto.CsvExport;
 import com.acme.salary.dto.EmployeeDetail;
 import com.acme.salary.dto.EmployeeSummary;
 import com.acme.salary.dto.ExitRequest;
@@ -45,6 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,7 +65,7 @@ class EmployeeServiceTest {
     @BeforeEach
     void setUp() {
         Clock fixedClock = Clock.fixed(TODAY.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC);
-        service = new EmployeeService(employees, revisions, fixedClock);
+        service = new EmployeeService(employees, revisions, new EmployeeCsvWriter(), fixedClock);
     }
 
     private static Employee anEmployee(Long id) {
@@ -255,6 +257,40 @@ class EmployeeServiceTest {
 
             assertThat(detail.exitDate()).isEqualTo(LocalDate.of(2025, 5, 31));
             assertThat(detail.active()).isFalse();
+        }
+    }
+
+    @Nested
+    class Exporting {
+
+        @Test
+        void exports_every_matching_employee_rather_than_one_page() {
+            Employee employee = anEmployee(7L);
+            when(employees.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(employee));
+            when(revisions.findCurrentSalaries(anyCollection(), any(LocalDate.class)))
+                    .thenReturn(List.of(salaryRow(7L, "1600000", "INR", LocalDate.of(2024, 4, 1))));
+
+            CsvExport export = service.exportCsv(EmployeeCriteria.unfiltered());
+
+            assertThat(export.content()).contains("ACME-1").contains("1600000").contains("INR");
+        }
+
+        @Test
+        void names_the_file_after_the_day_it_was_taken() {
+            when(employees.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of());
+
+            assertThat(service.exportCsv(EmployeeCriteria.unfiltered()).filename())
+                    .isEqualTo("employees-2025-06-01.csv");
+        }
+
+        @Test
+        void exports_a_header_only_file_when_nothing_matched() {
+            when(employees.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of());
+
+            CsvExport export = service.exportCsv(EmployeeCriteria.unfiltered());
+
+            assertThat(export.content()).contains("Employee Code");
+            verify(revisions, never()).findCurrentSalaries(anyList(), any(LocalDate.class));
         }
     }
 

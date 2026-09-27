@@ -1,6 +1,7 @@
 package com.acme.salary.service;
 
 import com.acme.salary.dto.EmployeeCriteria;
+import com.acme.salary.dto.CsvExport;
 import com.acme.salary.dto.EmployeeDetail;
 import com.acme.salary.dto.EmployeeFilter;
 import com.acme.salary.dto.EmployeeSummary;
@@ -27,6 +28,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,7 +45,11 @@ public class EmployeeService {
 
     private final EmployeeRepository employees;
     private final SalaryRevisionRepository revisions;
+    private final EmployeeCsvWriter csvWriter;
     private final Clock clock;
+
+    /** Exports come out in a stable order, so two exports of the same data can be compared. */
+    private static final Sort EXPORT_ORDER = Sort.by("employeeCode");
 
     /**
      * One page of employees with the salary each was on as at the filter date.
@@ -59,12 +65,30 @@ public class EmployeeService {
             return page.map(employee -> toSummary(employee, null, filter.asOf()));
         }
 
-        Map<Long, CurrentSalaryRow> salaries = revisions
-                .findCurrentSalaries(page.getContent().stream().map(Employee::getId).toList(), filter.asOf())
+        Map<Long, CurrentSalaryRow> salaries = currentSalariesByEmployee(page.getContent(), filter.asOf());
+        return page.map(employee -> toSummary(employee, salaries.get(employee.getId()), filter.asOf()));
+    }
+
+    /** Employees paired with the salary each was on, in one extra query rather than one per row. */
+    private List<EmployeeSummary> withCurrentSalaries(List<Employee> employees, LocalDate asOf) {
+        if (employees.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, CurrentSalaryRow> salaries = currentSalariesByEmployee(employees, asOf);
+        return employees.stream()
+                .map(employee -> toSummary(employee, salaries.get(employee.getId()), asOf))
+                .toList();
+    }
+
+    private Map<Long, CurrentSalaryRow> currentSalariesByEmployee(List<Employee> employees, LocalDate asOf) {
+        return revisions.findCurrentSalaries(employees.stream().map(Employee::getId).toList(), asOf)
                 .stream()
                 .collect(Collectors.toMap(CurrentSalaryRow::getEmployeeId, Function.identity()));
+    }
 
-        return page.map(employee -> toSummary(employee, salaries.get(employee.getId()), filter.asOf()));
+    /** Every employee matching the filter, as a CSV file. Not paged: an export is the whole list. */
+    public CsvExport exportCsv(EmployeeCriteria criteria) {
+        throw new UnsupportedOperationException("not implemented yet");
     }
 
     public EmployeeDetail findDetail(Long id) {

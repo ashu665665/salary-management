@@ -8,10 +8,13 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.acme.salary.dto.EmployeeCriteria;
+import com.acme.salary.dto.CsvExport;
 import com.acme.salary.dto.EmployeeDetail;
 import com.acme.salary.dto.EmployeeSummary;
 import com.acme.salary.dto.MoneyView;
@@ -104,6 +107,36 @@ class EmployeeControllerTest {
         void rejects_an_unknown_country() throws Exception {
             mockMvc.perform(get("/api/employees").param("country", "ATLANTIS"))
                     .andExpect(status().isBadRequest());
+        }
+    }
+
+    @Nested
+    class ExportingTheList {
+
+        @Test
+        void serves_a_csv_file_as_a_download() throws Exception {
+            when(service.exportCsv(any(EmployeeCriteria.class)))
+                    .thenReturn(new CsvExport("employees-2025-06-01.csv", "Employee Code\r\nACME-1\r\n"));
+
+            mockMvc.perform(get("/api/employees/export"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Type", org.hamcrest.Matchers.startsWith("text/csv")))
+                    .andExpect(header().string("Content-Disposition",
+                            "attachment; filename=\"employees-2025-06-01.csv\""))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("ACME-1")));
+        }
+
+        @Test
+        void exports_what_the_list_is_filtered_to() throws Exception {
+            when(service.exportCsv(any(EmployeeCriteria.class))).thenReturn(new CsvExport("x.csv", ""));
+
+            mockMvc.perform(get("/api/employees/export").param("country", "INDIA").param("includeLeavers", "true"))
+                    .andExpect(status().isOk());
+
+            ArgumentCaptor<EmployeeCriteria> criteria = ArgumentCaptor.forClass(EmployeeCriteria.class);
+            verify(service).exportCsv(criteria.capture());
+            assertThat(criteria.getValue().country()).isEqualTo(Country.INDIA);
+            assertThat(criteria.getValue().includeLeavers()).isTrue();
         }
     }
 
