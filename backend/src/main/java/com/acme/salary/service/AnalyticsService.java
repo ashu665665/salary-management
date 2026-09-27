@@ -8,15 +8,21 @@ import com.acme.salary.dto.PayrollOverview;
 import com.acme.salary.model.GroupBy;
 import com.acme.salary.repository.AnalyticsRepository;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Answers the questions the dashboard asks.
+ *
+ * <p>It decides the two things the queries should not decide for themselves: what "now" means, and
+ * which set of exchange rates the figures are converted through.
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AnalyticsService {
 
     private final AnalyticsRepository analytics;
@@ -24,18 +30,33 @@ public class AnalyticsService {
     private final Clock clock;
 
     public PayrollOverview overview() {
-        throw new UnsupportedOperationException("not implemented yet");
+        PayrollOverview overview = analytics.overview(today(), properties.rateSet());
+        return new PayrollOverview(
+                overview.asOf(),
+                properties.baseCurrency(),
+                overview.headcount(),
+                overview.totalAnnualCost(),
+                overview.medianSalary(),
+                overview.averageIncreasePercent());
     }
 
     public List<GroupSummary> breakdown(GroupBy groupBy) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return analytics.breakdown(groupBy, today(), properties.rateSet());
     }
 
+    /**
+     * The worst-paid-relative-to-peers first, never more than the configured maximum however many
+     * the caller asks for.
+     */
     public List<PayOutlier> outliers(int limit) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return analytics.outliers(today(), properties.rateSet(), Math.min(limit, properties.maximumOutliers()));
     }
 
     public List<ExchangeRateView> exchangeRates() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return analytics.exchangeRates(properties.rateSet());
+    }
+
+    private LocalDate today() {
+        return LocalDate.now(clock);
     }
 }

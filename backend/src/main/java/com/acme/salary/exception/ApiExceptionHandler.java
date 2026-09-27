@@ -1,5 +1,6 @@
 package com.acme.salary.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -40,6 +41,27 @@ public class ApiExceptionHandler {
     public ProblemDetail handleDuplicate(DataIntegrityViolationException exception) {
         return ProblemDetail.forStatusAndDetail(
                 HttpStatus.CONFLICT, "That employee code or email address is already in use");
+    }
+
+    /**
+     * A query parameter that breaks its own constraint, such as asking for zero results. These
+     * arrive separately from request-body failures because they are checked on the method itself.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ProblemDetail handleInvalidParameter(ConstraintViolationException exception) {
+        Map<String, String> errors = new HashMap<>();
+        exception.getConstraintViolations().forEach(violation ->
+                errors.putIfAbsent(lastPathElement(violation.getPropertyPath().toString()), violation.getMessage()));
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, "The request has invalid parameters");
+        problem.setProperty("errors", errors);
+        return problem;
+    }
+
+    private static String lastPathElement(String propertyPath) {
+        int lastDot = propertyPath.lastIndexOf('.');
+        return lastDot < 0 ? propertyPath : propertyPath.substring(lastDot + 1);
     }
 
     /**

@@ -25,21 +25,22 @@ public class AnalyticsController {
 
     @GetMapping("/overview")
     public PayrollOverview overview() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.overview();
     }
 
     @GetMapping("/breakdown")
     public List<GroupSummary> breakdown(@RequestParam(defaultValue = "COUNTRY") GroupBy groupBy) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.breakdown(groupBy);
     }
 
     @GetMapping("/outliers")
     public List<PayOutlier> outliers(@RequestParam(defaultValue = "10") @Min(1) int limit) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.outliers(limit);
     }
 
+    /** The rates every converted figure on the dashboard was produced with. */
     @GetMapping("/exchange-rates")
     public List<ExchangeRateView> exchangeRates() {
-        throw new UnsupportedOperationException("not implemented yet");
+        return service.exchangeRates();
     }
 }
