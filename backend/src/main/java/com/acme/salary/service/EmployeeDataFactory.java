@@ -12,8 +12,10 @@ import java.time.LocalDate;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
@@ -34,6 +36,16 @@ public class EmployeeDataFactory {
     private static final Month REVIEW_MONTH = Month.APRIL;
 
     private static final int LONGEST_SERVICE_YEARS = 12;
+
+    /**
+     * How much the pay bands themselves move each year.
+     *
+     * <p>This is what creates people who are underpaid without anyone deciding to underpay them:
+     * someone hired eight years ago started on the band of that year, and if their raises since
+     * have not kept up with the band, they now sit below people doing the same job. That drift is
+     * the main thing an HR Manager wants this software to surface, so the data has to contain it.
+     */
+    private static final double BAND_GROWTH_PER_YEAR = 0.04;
 
     /** Roughly how many of every hundred people have left. */
     private static final int LEAVER_PERCENTAGE = 8;
@@ -135,10 +147,11 @@ public class EmployeeDataFactory {
                 department,
                 startingLevel,
                 hireDate,
-                salaryFor(country, startingLevel, random));
+                salaryFor(country, startingLevel, random, hireDate, asOf));
 
         LocalDate exitDate = maybeExitDate(hireDate, asOf, random);
-        buildPayHistory(employee, currentLevel, promotions, hireDate, exitDate == null ? asOf : exitDate, random);
+        buildPayHistory(employee, currentLevel, promotions, hireDate,
+                exitDate == null ? asOf : exitDate, asOf, random);
         if (exitDate != null) {
             employee.markExit(exitDate);
         }
@@ -147,50 +160,46 @@ public class EmployeeDataFactory {
 
     /**
      * Walks the review rounds from the year after joining to the last one that has happened,
-     * raising pay each year and promoting where planned.
+     * raising pay each year and promoting at the rounds chosen for it.
+     *
+     * <p>The promotion rounds are picked up front rather than spaced by a formula. An earlier
+     * version promoted whoever had not caught up on their final review, which quietly bunched
+     * promotions into the recent past and pushed the reported year-on-year increase to 15%.
      */
     private void buildPayHistory(Employee employee, JobLevel targetLevel, int promotions,
-            LocalDate hireDate, LocalDate until, Random random) {
+            LocalDate hireDate, LocalDate until, LocalDate asOf, Random random) {
 
         List<LocalDate> reviews = reviewDates(hireDate, until);
-        int remainingPromotions = Math.min(promotions, reviews.size());
-        // Space the promotions out across the reviews rather than bunching them at the start.
-        int promoteEvery = remainingPromotions == 0 ? Integer.MAX_VALUE : Math.max(1, reviews.size() / remainingPromotions);
+        if (reviews.isEmpty()) {
+            return;
+        }
+        Set<Integer> promotionRounds = pickRounds(reviews.size(), Math.min(promotions, reviews.size()), random);
 
         for (int index = 0; index < reviews.size(); index++) {
             LocalDate reviewDate = reviews.get(index);
             Money current = employee.latestRevision().getSalary();
-            boolean promoting = remainingPromotions > 0
-                    && (index + 1) % promoteEvery == 0
-                    && targetLevel.isAbove(employee.getJobLevel());
 
-            if (promoting) {
+            if (promotionRounds.contains(index) && targetLevel.isAbove(employee.getJobLevel())) {
                 JobLevel nextLevel = levelAbove(employee.getJobLevel());
-                employee.promoteTo(nextLevel, raised(current, employee, random, 0.14, 0.22), reviewDate);
-                remainingPromotions--;
+                employee.promoteTo(nextLevel,
+                        promotionSalary(employee, nextLevel, current, random, reviewDate, asOf), reviewDate);
             } else if (random.nextInt(100) < 7) {
                 employee.recordRevision(
-                        raised(current, employee, random, 0.03, 0.09), reviewDate, RevisionReason.MARKET_CORRECTION);
+                        raised(current, employee, random, 0.02, 0.06), reviewDate, RevisionReason.MARKET_CORRECTION);
             } else {
                 employee.recordRevision(
-                        raised(current, employee, random, 0.04, 0.11), reviewDate, RevisionReason.ANNUAL_RAISE);
+                        raised(current, employee, random, 0.02, 0.07), reviewDate, RevisionReason.ANNUAL_RAISE);
             }
         }
+    }
 
-        // Anyone still short of their level gets there on the last review, so the level on the
-        // record always matches the pay history that produced it.
-        while (targetLevel.isAbove(employee.getJobLevel()) && !reviews.isEmpty()) {
-            LocalDate lastReview = reviews.get(reviews.size() - 1);
-            LocalDate promotionDate = lastReview.plusDays(1);
-            if (promotionDate.isAfter(until)) {
-                break;
-            }
-            employee.promoteTo(
-                    levelAbove(employee.getJobLevel()),
-                    raised(employee.latestRevision().getSalary(), employee, random, 0.12, 0.18),
-                    promotionDate);
-            reviews = List.of(promotionDate);
+    /** Which review rounds a promotion falls on, spread across a career rather than bunched. */
+    private Set<Integer> pickRounds(int totalRounds, int howMany, Random random) {
+        Set<Integer> chosen = new HashSet<>();
+        while (chosen.size() < howMany) {
+            chosen.add(random.nextInt(totalRounds));
         }
+        return chosen;
     }
 
     /** Every first of April between joining and the cut-off. */
@@ -234,9 +243,15 @@ public class EmployeeDataFactory {
         return hireDate.plusDays(stayedFor);
     }
 
-    private Money salaryFor(Country country, JobLevel level, Random random) {
+    /**
+     * What this level paid in this country on a given date: today's band, wound back by however
+     * many years ago that was.
+     */
+    private Money salaryFor(Country country, JobLevel level, Random random, LocalDate on, LocalDate asOf) {
         PayScale scale = PAY_SCALES.get(country);
-        double usd = LEVEL_PAY_USD.get(level) * scale.countryMultiplier();
+        double yearsAgo = Math.max(0, asOf.getYear() - on.getYear());
+        double bandThen = LEVEL_PAY_USD.get(level) / Math.pow(1 + BAND_GROWTH_PER_YEAR, yearsAgo);
+        double usd = bandThen * scale.countryMultiplier();
         // Two people at the same level in the same country do not earn exactly the same.
         double withSpread = usd * (0.88 + random.nextDouble() * 0.24);
         BigDecimal local = BigDecimal.valueOf(withSpread * scale.unitsPerUsd());
@@ -251,6 +266,18 @@ public class EmployeeDataFactory {
             default -> BigDecimal.valueOf(250);
         };
         return amount.divide(unit, 0, RoundingMode.HALF_UP).multiply(unit);
+    }
+
+    /**
+     * A promotion puts someone on the band for the level they are moving into, never less than a
+     * small step up from what they were on. Bumping by a flat percentage instead would leave the
+     * senior bands full of people paid like the level below.
+     */
+    private Money promotionSalary(Employee employee, JobLevel newLevel, Money current, Random random,
+            LocalDate effectiveDate, LocalDate asOf) {
+        Money band = salaryFor(employee.getCountry(), newLevel, random, effectiveDate, asOf);
+        Money floor = raised(current, employee, random, 0.05, 0.09);
+        return band.isGreaterThan(floor) ? band : floor;
     }
 
     /** A raise, rounded the same way a starting salary is: payroll deals in round numbers. */
