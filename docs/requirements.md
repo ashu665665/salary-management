@@ -52,3 +52,26 @@ Get the HR Manager out of spreadsheets. Today the data is in Excel, and that cau
 **Hourly and part-time** — everyone seeded is full-time salaried. Prorating is arithmetic, not a design question.
 
 **Self-service, multiple orgs, translations, mobile-first, caching** — nobody in this brief needs them. On caching specifically: 10,000 employees at a few revisions each is ~40,000 rows, which is small for Postgres. Aggregates run in SQL with indexes on the filtered columns; there's no load here that justifies more.
+
+## What changed after this was written
+
+This document was written before any code. Three things moved, and it is more useful to record that
+than to quietly edit the original.
+
+**CSV export survived; CSV import stayed out.** As planned. Export is one endpoint and cannot
+corrupt anything; import needs column mapping, per-row validation and a preview to be safe.
+
+**The seed defaults to 25 employees, not 10,000.** The generator supports any size and 10,000 takes
+2.4 seconds, but carrying that much demo data through local, test and live environments buys
+nothing. It is one environment variable (`SEED_EMPLOYEE_COUNT`). The trade is visible on the
+dashboard: peer groups of fewer than five are not compared, so at 25 employees the outlier panel is
+empty by design.
+
+**The whole system ships as one container.** Database, API and UI together, started with
+`docker compose up`. Not how a production system should be arranged — a database belongs outside
+the application it serves — but it makes the system runnable anywhere with one command, which
+matters more here. The cost is recorded in the README and in the architecture notes.
+
+**Salary history proved to be the right call.** It was the one place the plan spent extra modelling
+effort, and everything interesting on the dashboard — year-on-year movement, the reason a salary
+changed, the story behind a number — comes from it.
