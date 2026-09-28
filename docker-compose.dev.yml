@@ -1,0 +1,26 @@
+# Just the database, for working on the backend locally:
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#   cd backend && mvn spring-boot:run
+#
+# The full system in one container is docker-compose.yml. Integration tests do not need either of
+# these: Testcontainers starts its own Postgres.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: salary
+      POSTGRES_USER: salary
+      POSTGRES_PASSWORD: salary
+    ports:
+      - "5432:5432"
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U salary -d salary"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dev-db-data:
