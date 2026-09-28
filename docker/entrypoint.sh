@@ -10,7 +10,11 @@ export PGDATA="${PGDATA:-/var/lib/postgresql/data}"
 echo "[entrypoint] starting postgres"
 # The official image's own entrypoint handles first-run initialisation, creating the database and
 # the user from POSTGRES_*. Running it in the background leaves this script free to start the app.
-docker-entrypoint.sh postgres &
+#
+# listen_addresses=localhost is the flag that matters: the database accepts connections only from
+# inside this container. Nothing outside can reach it, whatever the network around the container
+# looks like, so the credential never crosses a wire.
+docker-entrypoint.sh postgres -c listen_addresses=localhost &
 POSTGRES_PID=$!
 
 echo "[entrypoint] waiting for postgres to accept connections"

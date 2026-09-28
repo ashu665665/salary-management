@@ -2,6 +2,8 @@
 #
 # The single container holds the database, the API and the UI. Open http://localhost:8080 once it
 # reports healthy. On first start it creates the database and seeds a small demo organisation.
+#
+# Settings come from .env, which is not committed. Copy .env.example to .env to change them.
 services:
   salary-management:
     build:
@@ -9,11 +11,16 @@ services:
       dockerfile: Dockerfile
     image: salary-management:latest
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:8080"
     environment:
       # Seeding only ever fills an empty database; it never replaces data that is already there.
-      SEED_ENABLED: "true"
-      SEED_EMPLOYEE_COUNT: "25"
+      SEED_ENABLED: "${SEED_ENABLED:-true}"
+      SEED_EMPLOYEE_COUNT: "${SEED_EMPLOYEE_COUNT:-25}"
+      SEED_RESET: "${SEED_RESET:-false}"
+      # The database is reachable only from inside the container, so this is a local default rather
+      # than a secret. Changing it applies to a new volume: docker compose down -v first.
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-salary}"
+      DATABASE_PASSWORD: "${POSTGRES_PASSWORD:-salary}"
     volumes:
       - salary-data:/var/lib/postgresql/data
     healthcheck:

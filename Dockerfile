@@ -46,6 +46,10 @@ FROM postgres:16-alpine
 
 RUN apk add --no-cache openjdk21-jre-headless
 
+# Defaults for a database that is only reachable from inside this container: Postgres is started
+# with listen_addresses=localhost, and only the application port is published. They are
+# overridable, and a deployment using a database outside the container should override DATABASE_*
+# with real credentials supplied by the platform rather than anything baked into an image.
 ENV PGDATA=/var/lib/postgresql/data \
     POSTGRES_DB=salary \
     POSTGRES_USER=salary \
@@ -64,7 +68,8 @@ EXPOSE 8080
 # The database is written here. Mount a volume on it to keep data between runs.
 VOLUME ["/var/lib/postgresql/data"]
 
+# PORT is honoured rather than assumed, since a host may well inject its own.
 HEALTHCHECK --interval=10s --timeout=5s --start-period=90s --retries=5 \
-    CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+    CMD wget -qO- "http://localhost:${PORT:-8080}/actuator/health" || exit 1
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

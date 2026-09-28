@@ -1,0 +1,16 @@
+# Line endings.
+#
+# Git is configured on some machines to convert text files to CRLF on checkout. That is harmless
+# for source, and fatal for anything Linux has to execute: a shell script with CRLF endings has a
+# shebang of "#!/bin/sh\r", which the kernel cannot find, and the container dies at startup with a
+# misleading "no such file or directory".
+#
+# These files end up inside a Linux container, so they keep LF whatever the host prefers.
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+.env.example    text eol=lf
+
+# Everything else: normalise to LF in the repository, leave the working copy to the platform.
+*               text=auto

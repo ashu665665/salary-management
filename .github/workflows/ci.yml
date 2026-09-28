@@ -1,0 +1,107 @@
+# Every push to main, and every pull request against it, has to prove itself.
+#
+# Three jobs, running in parallel: the backend suite, the frontend suite, and a check that the
+# container actually builds and serves something. They cost different amounts and fail for
+# different reasons, so they are kept apart rather than chained.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A newer push makes an in-flight run pointless; let it go rather than spending runners on it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      # verify runs the unit tests and then the integration tests, which start a real Postgres
+      # through Testcontainers. The runner already has Docker, so nothing else is needed.
+      - name: Unit and integration tests
+        working-directory: backend
+        run: mvn -B verify
+
+      - name: Keep the test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+          retention-days: 7
+
+  frontend:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Component and service tests
+        working-directory: frontend
+        run: npm test
+
+      # A green suite over code that does not compile for production is not much of a gate.
+      - name: Production build
+        working-directory: frontend
+        run: npm run build
+
+  image:
+    name: Container builds and serves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The unit and component suites can both pass while the assembled system does not run at
+      # all — a broken entrypoint, a missing static file, a line ending that stops a shell script
+      # executing. This job is the one that would have caught each of those.
+      - name: Build the image
+        run: docker build -t salary-management:ci .
+
+      - name: Start it and wait for it to report healthy
+        run: |
+          docker run -d --name ci-check -p 8080:8080 -e SEED_EMPLOYEE_COUNT=25 salary-management:ci
+          for attempt in $(seq 1 60); do
+            if curl -fs http://localhost:8080/actuator/health > /dev/null; then
+              echo "healthy after ${attempt} attempts"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "the container never became healthy" >&2
+          docker logs ci-check
+          exit 1
+
+      - name: Check it serves both the app and the API
+        run: |
+          curl -fs http://localhost:8080/ | grep -q "<app-root>" \
+            || { echo "the UI was not served" >&2; docker logs ci-check; exit 1; }
+          curl -fs "http://localhost:8080/api/employees?size=1" > /dev/null \
+            || { echo "the API did not answer" >&2; docker logs ci-check; exit 1; }
+          echo "the container serves the UI and the API"
