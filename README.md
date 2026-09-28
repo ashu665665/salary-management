@@ -75,19 +75,75 @@ few hundred to see that part of the dashboard do its job:
 SEED_EMPLOYEE_COUNT=300 docker compose up
 ```
 
-## Developing
+## Running it after a code change
 
-The single container is for running the system, not for working on it. For that, run the database
-on its own and the two applications from source.
+The single container is for running the system, not for working in it: every change would mean a
+full image rebuild. Three ways to run it, depending on what you touched.
+
+Requires **JDK 21** and **Node 22.12+**. All three need the database, so start it once and leave
+it: it keeps its data between runs.
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d   # Postgres on 5432
-
-cd backend && mvn spring-boot:run                # API on 8080
-cd frontend && npm install && npm start          # UI on 4200, proxying /api to 8080
+docker compose -f docker-compose.dev.yml up -d    # Postgres on 5432
 ```
 
-Requires **JDK 21** and **Node 22.12+**.
+### After a backend change
+
+Run the API from source. It seeds an empty database on startup, so the first run gives you the
+demo organisation to work against.
+
+```bash
+cd backend
+mvn spring-boot:run          # http://localhost:8080
+```
+
+Stop with Ctrl-C and run it again to pick up a change. The API is usable on its own while you work
+on it:
+
+```bash
+curl "http://localhost:8080/api/employees?size=5"
+curl "http://localhost:8080/api/analytics/overview"
+```
+
+Run `mvn test` before you commit — it needs no database and takes a few seconds.
+
+### After a frontend change
+
+Leave the backend running as above, then start the dev server in a second terminal. It rebuilds on
+save, and proxies `/api` to the backend on 8080, so the two halves behave as though they were
+served together.
+
+```bash
+cd frontend
+npm install                  # first time only
+npm start                    # http://localhost:4200
+```
+
+Open **4200**, not 8080 — 8080 is the API while you are working this way. If the dev server fails
+to start its worker pool on a machine short of memory, use `NG_BUILD_MAX_WORKERS=1 npm start`.
+
+### Both together, the way it is deployed
+
+When you want to check the real thing — Spring serving the compiled Angular from one container,
+which is what production runs — build the image and run it:
+
+```bash
+docker compose up --build    # http://localhost:8080
+```
+
+**`--build` is the part that matters after a code change.** Without it Docker reuses the last
+image and you will be looking at your previous version, which is a confusing five minutes. The
+build compiles Angular, packages the jar with the UI inside it, and starts the container: a few
+minutes the first time, less afterwards because the dependency layers are cached.
+
+Worth doing before you push anything that touches the build, the static assets or the routing,
+since those only behave differently once both halves are served from the same origin.
+
+Stop the dev database when you are done with it:
+
+```bash
+docker compose -f docker-compose.dev.yml down     # add -v to delete its data too
+```
 
 ## Testing
 
