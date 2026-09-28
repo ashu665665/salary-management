@@ -1,5 +1,5 @@
 import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -16,6 +16,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { EmployeeApi } from '../../../core/api/employee-api';
 import { EnumLabelPipe } from '../../../shared/enum-label-pipe';
+import { MoneyPipe } from '../../../shared/money-pipe';
 import {
   COUNTRIES, Country, DEPARTMENTS, Department, EmployeeQuery, EmployeeSummary,
   JOB_LEVELS, JobLevel,
@@ -37,7 +38,7 @@ const DEFAULT_SORT = 'lastName,asc';
 @Component({
   selector: 'app-employee-list',
   imports: [
-    CurrencyPipe, DatePipe, FormsModule, RouterLink, EnumLabelPipe,
+    DatePipe, FormsModule, RouterLink, EnumLabelPipe, MoneyPipe,
     MatButtonModule, MatCheckboxModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatPaginatorModule, MatProgressBarModule, MatSelectModule, MatSortModule, MatTableModule,
     MatTooltipModule,

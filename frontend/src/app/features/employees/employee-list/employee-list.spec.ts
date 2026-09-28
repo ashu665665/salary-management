@@ -67,7 +67,7 @@ describe('EmployeeList', () => {
 
       const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
       expect(text).toContain('INR');
-      expect(text).toMatch(/16,00,000|1,600,000/);
+      expect(text).toContain('INR 1,600,000');
     });
 
     it('says so when nobody matches, instead of showing an empty table', async () => {

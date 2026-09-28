@@ -12,9 +12,13 @@ export class EnumLabelPipe implements PipeTransform {
     if (!value) {
       return '';
     }
-    return value
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
+    return value.split('_').map(toWord).join(' ');
   }
+}
+
+/** Short words are acronyms in this vocabulary: HR should stay HR, not become Hr. */
+function toWord(word: string): string {
+  return word.length <= 2
+    ? word.toUpperCase()
+    : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
 }

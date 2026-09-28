@@ -12,6 +12,10 @@ describe('EnumLabelPipe', () => {
     expect(pipe.transform('CUSTOMER_SUPPORT')).toBe('Customer Support');
   });
 
+  it('leaves an acronym alone rather than turning HR into Hr', () => {
+    expect(pipe.transform('HR')).toBe('HR');
+  });
+
   it('leaves nothing behind for a missing value', () => {
     expect(pipe.transform(null)).toBe('');
     expect(pipe.transform(undefined)).toBe('');
