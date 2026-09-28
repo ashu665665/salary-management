@@ -1,1 +1,145 @@
-<p>employee list</p>
+<section class="page">
+  <header class="page__header">
+    <div>
+      <h1>Employees</h1>
+      <p class="page__subtitle">
+        {{ totalElements() }} {{ totalElements() === 1 ? 'person' : 'people' }} match the current filters
+      </p>
+    </div>
+    <a
+      mat-stroked-button
+      [href]="exportUrl()"
+      matTooltip="Download everyone matching these filters, not just this page"
+    >
+      <mat-icon>download</mat-icon>
+      Export CSV
+    </a>
+  </header>
+
+  <form class="filters" (submit)="$event.preventDefault()">
+    <mat-form-field appearance="outline" class="filters__search">
+      <mat-label>Search</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Name, employee code or email"
+        [value]="search()"
+        (input)="onSearchChange($any($event.target).value)"
+      />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Country</mat-label>
+      <mat-select [value]="country()" (selectionChange)="onCountryChange($event.value)">
+        <mat-option [value]="null">All countries</mat-option>
+        @for (option of countries; track option) {
+          <mat-option [value]="option">{{ option | enumLabel }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Department</mat-label>
+      <mat-select [value]="department()" (selectionChange)="onDepartmentChange($event.value)">
+        <mat-option [value]="null">All departments</mat-option>
+        @for (option of departments; track option) {
+          <mat-option [value]="option">{{ option | enumLabel }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Level</mat-label>
+      <mat-select [value]="jobLevel()" (selectionChange)="onJobLevelChange($event.value)">
+        <mat-option [value]="null">All levels</mat-option>
+        @for (option of jobLevels; track option) {
+          <mat-option [value]="option">{{ option | enumLabel }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-checkbox [checked]="includeLeavers()" (change)="onIncludeLeaversChange($event.checked)">
+      Include people who have left
+    </mat-checkbox>
+  </form>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (failed()) {
+    <p class="message message--error">
+      Could not load employees. Check the connection and try again.
+    </p>
+  } @else if (isEmpty()) {
+    <p class="message">No employees match these filters.</p>
+  } @else {
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="employees()" matSort (matSortChange)="onSortChange($event)">
+        <ng-container matColumnDef="employeeCode">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="employeeCode">Code</th>
+          <td mat-cell *matCellDef="let employee">{{ employee.employeeCode }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="fullName">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="lastName">Name</th>
+          <td mat-cell *matCellDef="let employee">
+            <a [routerLink]="['/employees', employee.id]">{{ employee.fullName }}</a>
+            <span class="cell__secondary">{{ employee.email }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="country">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="country">Country</th>
+          <td mat-cell *matCellDef="let employee">{{ employee.country | enumLabel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="department">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="department">Department</th>
+          <td mat-cell *matCellDef="let employee">{{ employee.department | enumLabel }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="jobLevel">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="jobLevel">Level</th>
+          <td mat-cell *matCellDef="let employee">{{ employee.jobLevel | enumLabel }}</td>
+        </ng-container>
+
+        <!-- Local currency, never converted: this is what the person is actually paid. -->
+        <ng-container matColumnDef="salary">
+          <th mat-header-cell *matHeaderCellDef class="cell--number">Current salary</th>
+          <td mat-cell *matCellDef="let employee" class="cell--number">
+            @if (employee.currentSalary) {
+              {{ employee.currentSalary.amount | currency: employee.currentSalary.currency : 'code' : '1.0-0' }}
+              <span class="cell__secondary">since {{ employee.salaryEffectiveFrom | date: 'MMM y' }}</span>
+            } @else {
+              <span class="cell__secondary">not on record</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let employee">
+            @if (employee.active) {
+              <span class="badge badge--active">Active</span>
+            } @else {
+              <span class="badge badge--left">Left {{ employee.exitDate | date: 'MMM y' }}</span>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+
+    <mat-paginator
+      [length]="totalElements()"
+      [pageIndex]="page()"
+      [pageSize]="size()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      (page)="onPageChange($event)"
+    />
+  }
+</section>

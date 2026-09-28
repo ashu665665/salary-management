@@ -1,0 +1,38 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.topbar__nav {
+  display: flex;
+  gap: 1.25rem;
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    opacity: 0.75;
+    padding-bottom: 0.125rem;
+    border-bottom: 2px solid transparent;
+  }
+
+  a.is-active {
+    opacity: 1;
+    border-bottom-color: currentColor;
+  }
+}
+
+main {
+  max-width: 96rem;
+  margin: 0 auto;
+}

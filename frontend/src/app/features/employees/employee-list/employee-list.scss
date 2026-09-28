@@ -1,0 +1,80 @@
+.page {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.page__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+}
+
+.page__subtitle {
+  margin: 0.25rem 0 0;
+  opacity: 0.7;
+  font-size: 0.875rem;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.filters__search {
+  flex: 1 1 22rem;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.cell--number {
+  text-align: right;
+}
+
+.cell__secondary {
+  display: block;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.badge--active {
+  background: rgb(0 128 0 / 12%);
+}
+
+.badge--left {
+  background: rgb(0 0 0 / 8%);
+}
+
+.message {
+  padding: 2rem;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.message--error {
+  opacity: 1;
+  color: var(--mat-sys-error, #b3261e);
+}
