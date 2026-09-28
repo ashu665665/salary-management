@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
@@ -17,6 +18,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { EmployeeApi } from '../../../core/api/employee-api';
 import { EnumLabelPipe } from '../../../shared/enum-label-pipe';
 import { MoneyPipe } from '../../../shared/money-pipe';
+import { HireEmployeeDialog } from '../dialogs/hire-employee-dialog';
 import {
   COUNTRIES, Country, DEPARTMENTS, Department, EmployeeQuery, EmployeeSummary,
   JOB_LEVELS, JobLevel,
@@ -48,6 +50,7 @@ const DEFAULT_SORT = 'lastName,asc';
 })
 export class EmployeeList implements OnDestroy {
   private readonly api = inject(EmployeeApi);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly countries = COUNTRIES;
   protected readonly departments = DEPARTMENTS;
@@ -125,8 +128,16 @@ export class EmployeeList implements OnDestroy {
   }
 
   /** A plain link, so the browser downloads the file rather than the app holding it in memory. */
+  /** Reloads only when someone was actually added, so a cancelled form costs nothing. */
   hireEmployee(): void {
-    throw new Error('not implemented yet');
+    this.dialog
+      .open(HireEmployeeDialog, { width: '40rem' })
+      .afterClosed()
+      .subscribe((created?: unknown) => {
+        if (created) {
+          this.reloadFromFirstPage();
+        }
+      });
   }
 
   exportUrl(): string {

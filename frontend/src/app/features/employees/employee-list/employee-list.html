@@ -6,6 +6,11 @@
         {{ totalElements() }} {{ totalElements() === 1 ? 'person' : 'people' }} match the current filters
       </p>
     </div>
+    <div class="page__actions">
+    <button mat-flat-button type="button" (click)="hireEmployee()">
+      <mat-icon>person_add</mat-icon>
+      Add employee
+    </button>
     <a
       mat-stroked-button
       [href]="exportUrl()"
@@ -14,6 +19,7 @@
       <mat-icon>download</mat-icon>
       Export CSV
     </a>
+    </div>
   </header>
 
   <form class="filters" (submit)="$event.preventDefault()">

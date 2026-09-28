@@ -1,1 +1,95 @@
-<p>hire</p>
+<h2 mat-dialog-title>Add an employee</h2>
+
+<mat-dialog-content class="form">
+  <div class="form__row">
+    <mat-form-field appearance="outline">
+      <mat-label>Employee code</mat-label>
+      <input matInput [value]="employeeCode()" (input)="employeeCode.set($any($event.target).value)" />
+      <mat-hint>Must be unique</mat-hint>
+    </mat-form-field>
+  </div>
+
+  <div class="form__row">
+    <mat-form-field appearance="outline">
+      <mat-label>First name</mat-label>
+      <input matInput [value]="firstName()" (input)="firstName.set($any($event.target).value)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Last name</mat-label>
+      <input matInput [value]="lastName()" (input)="lastName.set($any($event.target).value)" />
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Email</mat-label>
+    <input matInput type="email" [value]="email()" (input)="email.set($any($event.target).value)" />
+  </mat-form-field>
+
+  <div class="form__row">
+    <mat-form-field appearance="outline">
+      <mat-label>Country</mat-label>
+      <mat-select [value]="country()" (selectionChange)="onCountryChange($event.value)">
+        @for (option of countries; track option) {
+          <mat-option [value]="option">{{ option | enumLabel }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Department</mat-label>
+      <mat-select [value]="department()" (selectionChange)="department.set($event.value)">
+        @for (option of departments; track option) {
+          <mat-option [value]="option">{{ option | enumLabel }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="form__row">
+    <mat-form-field appearance="outline">
+      <mat-label>Level</mat-label>
+      <mat-select [value]="jobLevel()" (selectionChange)="jobLevel.set($event.value)">
+        @for (option of jobLevels; track option) {
+          <mat-option [value]="option">{{ option | enumLabel }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Start date</mat-label>
+      <input matInput [matDatepicker]="picker" [value]="hireDate()" (dateChange)="hireDate.set($event.value)" />
+      <mat-datepicker-toggle matIconSuffix [for]="picker" />
+      <mat-datepicker #picker />
+    </mat-form-field>
+  </div>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Starting salary{{ currency() ? ' (' + currency() + ')' : '' }}</mat-label>
+    <input
+      matInput
+      type="number"
+      min="1"
+      [value]="salaryAmount()"
+      (input)="salaryAmount.set($any($event.target).valueAsNumber)"
+    />
+    <mat-hint>
+      @if (currency()) {
+        Paid in {{ currency() }}, the currency for the chosen country
+      } @else {
+        Choose a country and the currency follows
+      }
+    </mat-hint>
+  </mat-form-field>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Cancel</button>
+  <button mat-flat-button type="button" [disabled]="!canSave()" (click)="save()">
+    {{ saving() ? 'Adding…' : 'Add employee' }}
+  </button>
+</mat-dialog-actions>
