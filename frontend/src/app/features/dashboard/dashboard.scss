@@ -1,0 +1,221 @@
+/*
+ * Chart colours live here as roles rather than raw hex, so the series colour is set once.
+ * The single series uses the validated blue; the status colours are the reserved pair and are
+ * always paired with an icon and words, never used on their own to carry meaning.
+ */
+.viz-root {
+  --series-1: #2a78d6;
+  --track: rgb(0 0 0 / 6%);
+  --status-below: #d03b3b;
+  --status-above: #ec835a;
+  --ink-muted: rgb(0 0 0 / 55%);
+}
+
+.page {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page__header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.page__subtitle {
+  margin: 0.25rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1rem;
+}
+
+.tile__label {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.tile__value {
+  margin: 0.25rem 0;
+  font-size: 1.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile__note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.125rem;
+  }
+}
+
+.panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.panel__note {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+  max-width: 60ch;
+}
+
+/* --- the bar chart ------------------------------------------------------- */
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  /* A 2px gap keeps adjacent bars from reading as one block. */
+  gap: 2px;
+}
+
+.chart__row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr minmax(6rem, auto);
+  align-items: center;
+  gap: 0.75rem;
+  /* A hit target taller than the bar itself, so the tooltip is easy to reach. */
+  padding: 0.25rem 0;
+}
+
+.chart__row:hover .chart__bar {
+  filter: brightness(0.92);
+}
+
+.chart__label {
+  font-size: 0.875rem;
+  text-align: right;
+  color: var(--ink-muted);
+}
+
+.chart__track {
+  background: var(--track);
+  border-radius: 4px;
+  height: 0.875rem;
+  display: block;
+}
+
+.chart__bar {
+  display: block;
+  height: 100%;
+  background: var(--series-1);
+  /* Rounded only at the data end; the bar stays anchored to its baseline. */
+  border-radius: 0 4px 4px 0;
+  min-width: 2px;
+}
+
+/* Values are labelled directly, so no axis is needed to read the chart. */
+.chart__value {
+  font-size: 0.875rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- tables -------------------------------------------------------------- */
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+.cell--number {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell--muted {
+  color: var(--ink-muted);
+}
+
+.cell__secondary {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.status--below {
+  color: var(--status-below);
+}
+
+.status--above {
+  color: var(--status-above);
+}
+
+/* --- footer -------------------------------------------------------------- */
+
+.rates {
+  border-top: 1px solid rgb(0 0 0 / 8%);
+  padding-top: 0.75rem;
+}
+
+.rates__label {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+
+.rates__list {
+  margin: 0.25rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rates__note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.message {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.message--error {
+  color: #d03b3b;
+}

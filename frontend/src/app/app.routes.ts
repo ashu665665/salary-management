@@ -4,7 +4,12 @@ import { Routes } from '@angular/router';
  * Screens are loaded on demand, so opening the employee list does not also download the dashboard.
  */
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'employees' },
+  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  {
+    path: 'dashboard',
+    title: 'Dashboard',
+    loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
+  },
   {
     path: 'employees',
     title: 'Employees',
@@ -17,5 +22,5 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/employees/employee-detail/employee-detail').then((m) => m.EmployeeDetailPage),
   },
-  { path: '**', redirectTo: 'employees' },
+  { path: '**', redirectTo: 'dashboard' },
 ];

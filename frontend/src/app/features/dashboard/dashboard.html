@@ -1,1 +1,203 @@
-<p>dashboard</p>
+<section class="page viz-root">
+  <header class="page__header">
+    <div>
+      <h1>How we pay people</h1>
+      @if (overview(); as summary) {
+        <p class="page__subtitle">
+          As at {{ summary.asOf | date: 'd MMM y' }} · every converted figure is in {{ summary.baseCurrency }}
+        </p>
+      }
+    </div>
+  </header>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (failed()) {
+    <p class="message message--error">Could not load the figures. Check the connection and try again.</p>
+  } @else if (overview(); as summary) {
+    <!-- Headline numbers, not charts: a single total is read faster as a number. -->
+    <div class="tiles">
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="tile__label">People employed</p>
+          <p class="tile__value">{{ summary.headcount | number }}</p>
+          <p class="tile__note">Excluding anyone who has left</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="tile__label">Annual payroll</p>
+          <p class="tile__value">{{ summary.totalAnnualCost | number: '1.0-0' }}</p>
+          <p class="tile__note">{{ summary.baseCurrency }}, converted from local pay</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="tile__label">Median salary</p>
+          <p class="tile__value">{{ summary.medianSalary | number: '1.0-0' }}</p>
+          <p class="tile__note">{{ summary.baseCurrency }} · half earn more, half less</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="tile__label">Pay movement</p>
+          <p class="tile__value">{{ summary.averageIncreasePercent | number: '1.1-1' }}%</p>
+          <p class="tile__note">Average change over the last year</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <section class="panel">
+      <div class="panel__header">
+        <h2>Payroll cost by {{ dimension() | enumLabel }}</h2>
+        <mat-button-toggle-group
+          [value]="dimension()"
+          (change)="onDimensionChange($event.value)"
+          aria-label="Break the payroll down by"
+        >
+          @for (option of dimensions; track option) {
+            <mat-button-toggle [value]="option">{{ option | enumLabel }}</mat-button-toggle>
+          }
+        </mat-button-toggle-group>
+      </div>
+
+      <!-- One series, so no legend: the heading says what the bars are. -->
+      <div class="chart">
+        @for (bar of bars(); track bar.row.group) {
+          <div class="chart__row" [matTooltip]="bar.row.headcount + ' people · median ' + (bar.row.medianSalary | number: '1.0-0')">
+            <span class="chart__label">{{ bar.row.group | enumLabel }}</span>
+            <span class="chart__track">
+              <span class="chart__bar" data-testid="bar" [style.width.%]="bar.width"></span>
+            </span>
+            <span class="chart__value">{{ bar.row.totalAnnualCost | number: '1.0-0' }}</span>
+          </div>
+        } @empty {
+          <p class="message">Nothing to show yet.</p>
+        }
+      </div>
+
+      <!-- The same figures as a table: a bar shows size, not spread. -->
+      <div class="table-wrapper">
+        <table mat-table [dataSource]="breakdown()">
+          <ng-container matColumnDef="group">
+            <th mat-header-cell *matHeaderCellDef>{{ dimension() | enumLabel }}</th>
+            <td mat-cell *matCellDef="let row">{{ row.group | enumLabel }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="headcount">
+            <th mat-header-cell *matHeaderCellDef class="cell--number">People</th>
+            <td mat-cell *matCellDef="let row" class="cell--number">{{ row.headcount | number }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="totalAnnualCost">
+            <th mat-header-cell *matHeaderCellDef class="cell--number">Annual cost</th>
+            <td mat-cell *matCellDef="let row" class="cell--number">{{ row.totalAnnualCost | number: '1.0-0' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="lowerQuartile">
+            <th mat-header-cell *matHeaderCellDef class="cell--number">Lower quartile</th>
+            <td mat-cell *matCellDef="let row" class="cell--number cell--muted">
+              {{ row.lowerQuartile | number: '1.0-0' }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="medianSalary">
+            <th mat-header-cell *matHeaderCellDef class="cell--number">Median</th>
+            <td mat-cell *matCellDef="let row" class="cell--number">{{ row.medianSalary | number: '1.0-0' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="upperQuartile">
+            <th mat-header-cell *matHeaderCellDef class="cell--number">Upper quartile</th>
+            <td mat-cell *matCellDef="let row" class="cell--number cell--muted">
+              {{ row.upperQuartile | number: '1.0-0' }}
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="breakdownColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: breakdownColumns"></tr>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Paid outside their peer range</h2>
+      <p class="panel__note">
+        Compared against others at the same level in the same country. Peer groups of fewer than
+        {{ smallestPeerGroup }} people are not compared, because a range drawn from two salaries says nothing.
+      </p>
+
+      @if (outliers().length === 0) {
+        <p class="message">Nobody is paid outside the range for their peer group.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table mat-table [dataSource]="outliers()">
+            <ng-container matColumnDef="employee">
+              <th mat-header-cell *matHeaderCellDef>Employee</th>
+              <td mat-cell *matCellDef="let row">
+                {{ row.fullName }}
+                <span class="cell__secondary">{{ row.employeeCode }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="peerGroup">
+              <th mat-header-cell *matHeaderCellDef>Compared with</th>
+              <td mat-cell *matCellDef="let row">
+                {{ row.jobLevel | enumLabel }} · {{ row.country | enumLabel }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="salary">
+              <th mat-header-cell *matHeaderCellDef class="cell--number">Salary</th>
+              <td mat-cell *matCellDef="let row" class="cell--number">{{ row.salary | number: '1.0-0' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="range">
+              <th mat-header-cell *matHeaderCellDef class="cell--number">Peer range</th>
+              <td mat-cell *matCellDef="let row" class="cell--number cell--muted">
+                {{ row.lowerQuartile | number: '1.0-0' }} – {{ row.upperQuartile | number: '1.0-0' }}
+              </td>
+            </ng-container>
+
+            <!-- Icon and words carry the meaning; the colour only reinforces it. -->
+            <ng-container matColumnDef="position">
+              <th mat-header-cell *matHeaderCellDef>Position</th>
+              <td mat-cell *matCellDef="let row">
+                @if (row.position === 'BELOW_RANGE') {
+                  <span class="status status--below">
+                    <mat-icon>south</mat-icon>
+                    Below range
+                  </span>
+                } @else {
+                  <span class="status status--above">
+                    <mat-icon>north</mat-icon>
+                    Above range
+                  </span>
+                }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="outlierColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: outlierColumns"></tr>
+          </table>
+        </div>
+      }
+    </section>
+
+    <footer class="rates">
+      <p class="rates__label">Converted at</p>
+      <p class="rates__list">
+        @for (rate of rates(); track rate.currency) {
+          <span class="rates__item">{{ rate.currency }} {{ rate.unitsPerUsd | number: '1.0-2' }}</span>
+        }
+      </p>
+      <p class="rates__note">
+        Fixed rates, so the same question asked twice gives the same answer.
+      </p>
+    </footer>
+  }
+</section>
