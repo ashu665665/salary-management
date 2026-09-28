@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { of, throwError } from 'rxjs';
 
 import { EmployeeList } from './employee-list';
@@ -30,6 +31,7 @@ function aPage(content: EmployeeSummary[], totalElements = content.length): Page
 
 describe('EmployeeList', () => {
   let api: { list: ReturnType<typeof vi.fn>; exportUrl?: unknown };
+  let dialog: { open: ReturnType<typeof vi.fn> };
 
   async function createComponent() {
     const fixture = TestBed.createComponent(EmployeeList);
@@ -39,10 +41,15 @@ describe('EmployeeList', () => {
 
   beforeEach(() => {
     api = { list: vi.fn().mockReturnValue(of(aPage([anEmployee()]))) };
+    dialog = { open: vi.fn().mockReturnValue({ afterClosed: () => of(undefined) }) };
 
     TestBed.configureTestingModule({
       imports: [EmployeeList],
-      providers: [provideRouter([]), { provide: EmployeeApi, useValue: api }],
+      providers: [
+        provideRouter([]),
+        { provide: EmployeeApi, useValue: api },
+        { provide: MatDialog, useValue: dialog },
+      ],
     });
   });
 
@@ -165,6 +172,37 @@ describe('EmployeeList', () => {
       await fixture.whenStable();
 
       expect(api.list).toHaveBeenLastCalledWith(expect.objectContaining({ sort: 'lastName,asc' }));
+    });
+  });
+
+  describe('hiring someone', () => {
+    it('opens the hire form', async () => {
+      const fixture = await createComponent();
+
+      fixture.componentInstance.hireEmployee();
+
+      expect(dialog.open).toHaveBeenCalled();
+    });
+
+    it('shows the new person by reloading the list', async () => {
+      dialog.open.mockReturnValue({ afterClosed: () => of({ id: 42 }) });
+      const fixture = await createComponent();
+      api.list.mockClear();
+
+      fixture.componentInstance.hireEmployee();
+      await fixture.whenStable();
+
+      expect(api.list).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not reload when the form was cancelled', async () => {
+      const fixture = await createComponent();
+      api.list.mockClear();
+
+      fixture.componentInstance.hireEmployee();
+      await fixture.whenStable();
+
+      expect(api.list).not.toHaveBeenCalled();
     });
   });
 

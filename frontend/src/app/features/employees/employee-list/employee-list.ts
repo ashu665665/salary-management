@@ -125,6 +125,10 @@ export class EmployeeList implements OnDestroy {
   }
 
   /** A plain link, so the browser downloads the file rather than the app holding it in memory. */
+  hireEmployee(): void {
+    throw new Error('not implemented yet');
+  }
+
   exportUrl(): string {
     const parameters = new URLSearchParams();
     const filters = this.currentFilters();

@@ -12,6 +12,25 @@ export const COUNTRIES = [
 ] as const;
 export type Country = (typeof COUNTRIES)[number];
 
+/**
+ * What each country pays in. Mirrors the same mapping on the Country enum in the backend, which
+ * remains the authority: the server decides what currency a salary is stored in. This copy exists
+ * so the hire form can fill the currency in as soon as a country is chosen, rather than asking
+ * someone to know that Poland pays in PLN.
+ */
+export const PAY_CURRENCY: Record<Country, string> = {
+  INDIA: 'INR',
+  UNITED_STATES: 'USD',
+  UNITED_KINGDOM: 'GBP',
+  GERMANY: 'EUR',
+  POLAND: 'PLN',
+  SINGAPORE: 'SGD',
+  AUSTRALIA: 'AUD',
+  CANADA: 'CAD',
+  BRAZIL: 'BRL',
+  JAPAN: 'JPY',
+};
+
 export const DEPARTMENTS = [
   'ENGINEERING', 'PRODUCT', 'SALES', 'MARKETING', 'CUSTOMER_SUPPORT',
   'FINANCE', 'HR', 'LEGAL', 'OPERATIONS',
