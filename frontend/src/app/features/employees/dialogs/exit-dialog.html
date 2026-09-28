@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Record {{ employee.fullName }} as a leaver</h2>
+
+<mat-dialog-content class="form">
+  <p class="hint">
+    Their salary history is kept. They stop counting towards headcount and payroll cost from the day
+    after their last working day.
+  </p>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Last working day</mat-label>
+    <input matInput [matDatepicker]="picker" [value]="lastWorkingDay()" (dateChange)="lastWorkingDay.set($event.value)" />
+    <mat-datepicker-toggle matIconSuffix [for]="picker" />
+    <mat-datepicker #picker />
+  </mat-form-field>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Cancel</button>
+  <button mat-flat-button type="button" [disabled]="saving()" (click)="save()">
+    {{ saving() ? 'Saving…' : 'Record leaver' }}
+  </button>
+</mat-dialog-actions>

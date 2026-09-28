@@ -1,1 +1,110 @@
-<p>employee detail</p>
+<section class="page">
+  <a routerLink="/employees" class="back">
+    <mat-icon>arrow_back</mat-icon>
+    All employees
+  </a>
+
+  @if (loading()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
+
+  @if (failed()) {
+    <p class="message message--error">Could not load this employee.</p>
+  } @else if (employee(); as person) {
+    <header class="header">
+      <div>
+        <h1>{{ person.fullName }}</h1>
+        <p class="header__meta">
+          {{ person.employeeCode }} · {{ person.email }}
+        </p>
+        <p class="header__meta">
+          {{ person.jobLevel | enumLabel }} · {{ person.department | enumLabel }} · {{ person.country | enumLabel }}
+        </p>
+      </div>
+
+      <div class="header__actions">
+        @if (canChangePay()) {
+          <button mat-flat-button type="button" (click)="changePay()">
+            <mat-icon>trending_up</mat-icon>
+            Change pay
+          </button>
+          <button mat-stroked-button type="button" (click)="editDetails()">Edit details</button>
+          <button mat-stroked-button type="button" (click)="recordExit()">Record leaver</button>
+        } @else {
+          <span class="badge badge--left">Left {{ person.exitDate | date: 'd MMM y' }}</span>
+          <button mat-stroked-button type="button" (click)="editDetails()">Edit details</button>
+        }
+      </div>
+    </header>
+
+    <div class="cards">
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="stat__label">Current salary</p>
+          <p class="stat__value">{{ person.currentSalary | money }}</p>
+          <p class="stat__note">Paid in the currency of {{ person.country | enumLabel }}</p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="stat__label">Joined</p>
+          <p class="stat__value">{{ person.hireDate | date: 'd MMM y' }}</p>
+          <p class="stat__note">
+            @if (person.active) {
+              Still employed
+            } @else {
+              Left {{ person.exitDate | date: 'd MMM y' }}
+            }
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card appearance="outlined">
+        <mat-card-content>
+          <p class="stat__label">Pay changes</p>
+          <p class="stat__value">{{ person.revisions.length }}</p>
+          <p class="stat__note">Since joining</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <h2>Salary history</h2>
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="history()">
+        <ng-container matColumnDef="effectiveDate">
+          <th mat-header-cell *matHeaderCellDef>Effective from</th>
+          <td mat-cell *matCellDef="let row" data-testid="revision-date">
+            {{ row.revision.effectiveDate | date: 'd MMM y' }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="salary">
+          <th mat-header-cell *matHeaderCellDef class="cell--number">Salary</th>
+          <td mat-cell *matCellDef="let row" class="cell--number">{{ row.revision.salary | money }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="change">
+          <th mat-header-cell *matHeaderCellDef class="cell--number">Change</th>
+          <td mat-cell *matCellDef="let row" class="cell--number" data-testid="revision-change">
+            @if (row.changePercent === null) {
+              —
+            } @else {
+              <span [class.rise]="row.changePercent > 0" [class.fall]="row.changePercent < 0">
+                {{ row.changePercent > 0 ? '+' : '' }}{{ row.changePercent | number: '1.1-1' }}%
+              </span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="reason">
+          <th mat-header-cell *matHeaderCellDef>Reason</th>
+          <td mat-cell *matCellDef="let row">{{ row.revision.reason | enumLabel }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row *matRowDef="let row; columns: columns"></tr>
+      </table>
+    </div>
+  }
+</section>

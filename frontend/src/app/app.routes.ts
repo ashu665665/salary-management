@@ -11,5 +11,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/employees/employee-list/employee-list').then((m) => m.EmployeeList),
   },
+  {
+    path: 'employees/:id',
+    title: 'Employee',
+    loadComponent: () =>
+      import('./features/employees/employee-detail/employee-detail').then((m) => m.EmployeeDetailPage),
+  },
   { path: '**', redirectTo: 'employees' },
 ];
